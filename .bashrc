@@ -140,18 +140,33 @@ function setsid()
 export ORACLE_SID=$1
 }
 
-if [ -z "$PS1" ]; then
-   return
-fi
-
+function runlist()
+{
 echo "Running instances:"
 INSTANCELIST=$(ps -ef |grep _pmon_ | grep -v grep | grep -v sed | awk '{print $NF}' | sed -e 's/^ora_pmon_//' -e 's/^asm_pmon_//')
 
 if [ -z "$INSTANCELIST" ]; then
    echo "  None"
 else
-   for ITEM in $INSTANCELIST; do echo "  $ITEM"; done
+   for ITEM in $INSTANCELIST
+   do
+      echo "  $ITEM"
+      if [ -n "$(echo $ITEM | sed -e 's/^+.*$//')" ]; then
+         export ORACLE_SID=$ITEM
+      fi
+   done
 fi
-echo ""
+}
 
-db193 db19c1
+if [ -z "$PS1" ]; then
+   return
+fi
+
+echo ""
+runlist
+
+[ -z "$ORACLE_SID" ] && ORACLE_SID=prod
+db193 $ORACLE_SID
+echo ""
+showoraenv
+echo ""
