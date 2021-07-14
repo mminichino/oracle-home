@@ -9,6 +9,11 @@ fi
 
 export PATH=/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:$HOME/bin:/home/oracle/oracle-scripts:/home/oracle/ansible-helper
 export START_PATH=$PATH
+export HOME_PREFIX=/opt/app/oracle/product
+export GRID_PREFIX=/opt/app/oracle/product
+export DB_DIR=dbhome_1
+export GRID_DIR=grid_1
+export GRID_HOME=$GRID_PREFIX/19.3.0/$GRID_DIR
 
 function showoraenv()
 {
@@ -25,26 +30,21 @@ echo "LD_LIBRARY_PATH : $LD_LIBRARY_PATH"
 
 function db11()
 {
-export ORACLE_HOME=/u01/app/oracle/product/11.2.0/dbhome_1
-export OMS_HOME=/u08/server/oms
-export AGENT_HOME=/u08/agent/core/12.1.0.4.0
-export GRID_HOME=/u01/app/oracle/product/12.1.0/grid_1
+export ORACLE_HOME=$HOME_PREFIX/11.2.0/$DB_DIR
 export PATH=$START_PATH:$ORACLE_HOME/bin:$GRID_HOME/bin:$ORACLE_HOME/OPatch
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib
 }
 
 function db12()
 {
-export ORACLE_HOME=/u01/app/oracle/product/12.1.0/dbhome_1
-export GRID_HOME=/u01/app/oracle/product/12.1.0/grid_1
+export ORACLE_HOME=$HOME_PREFIX/12.1.0/$DB_DIR
 export PATH=$START_PATH:$ORACLE_HOME/bin:$GRID_HOME/bin:$ORACLE_HOME/OPatch
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib
 }
 
 function grid121()
 {
-export ORACLE_HOME=/u01/app/oracle/product/12.1.0/grid_1
-export GRID_HOME=/u01/app/oracle/product/12.1.0/grid_1
+export ORACLE_HOME=$HOME_PREFIX/12.1.0/grid_1
 export PATH=$START_PATH:$ORACLE_HOME/bin:$GRID_HOME/bin:$ORACLE_HOME/OPatch
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib
 export ORACLE_SID=+ASM1
@@ -54,8 +54,7 @@ function db121()
 {
 [ -z "$1" ] && echo $ORACLE_SID
 [ -n "$1" ] && export ORACLE_SID=$1
-export ORACLE_HOME=/u01/app/oracle/product/12.1.0/dbhome_1
-export GRID_HOME=/u01/app/oracle/product/12.1.0/grid_1
+export ORACLE_HOME=$HOME_PREFIX/12.1.0/$DB_DIR
 export PATH=$START_PATH:$ORACLE_HOME/bin:$GRID_HOME/bin:$ORACLE_HOME/OPatch
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib
 }
@@ -64,8 +63,7 @@ function db122()
 {
 [ -z "$1" ] && echo $ORACLE_SID
 [ -n "$1" ] && export ORACLE_SID=$1
-export ORACLE_HOME=/opt/app/oracle/product/12.2.0/dbhome_1
-export GRID_HOME=/opt/app/grid/product/19.3.0/grid_1
+export ORACLE_HOME=$HOME_PREFIX/12.2.0/$DB_DIR
 export PATH=$START_PATH:$ORACLE_HOME/bin:$GRID_HOME/bin:$ORACLE_HOME/OPatch
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib
 }
@@ -74,8 +72,7 @@ function db183()
 {
 [ -z "$1" ] && echo $ORACLE_SID
 [ -n "$1" ] && export ORACLE_SID=$1
-export ORACLE_HOME=/opt/app/oracle/product/18.3.0/dbhome_1
-export GRID_HOME=/opt/app/grid/product/19.3.0/grid_1
+export ORACLE_HOME=$HOME_PREFIX/18.3.0/$DB_DIR
 export PATH=$START_PATH:$ORACLE_HOME/bin:$GRID_HOME/bin:$ORACLE_HOME/OPatch
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib
 }
@@ -84,36 +81,35 @@ function db193()
 {
 [ -z "$1" ] && echo $ORACLE_SID
 [ -n "$1" ] && export ORACLE_SID=$1
-export ORACLE_HOME=/opt/app/oracle/product/19.3.0/dbhome_1
-export GRID_HOME=/opt/app/grid/product/19.3.0/grid_1
+export ORACLE_HOME=$HOME_PREFIX/19.3.0/$DB_DIR
 export PATH=$START_PATH:$ORACLE_HOME/bin:$GRID_HOME/bin:$ORACLE_HOME/OPatch
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib
 }
 
 function asmenv()
 {
-export ORACLE_HOME=/opt/app/grid/product/19.3.0/grid_1
+export ORACLE_HOME=$GRID_HOME
 export ORACLE_SID=+ASM1
 export PATH=$START_PATH:$ORACLE_HOME/bin:$ORACLE_HOME/OPatch
 }
 
 function sasmenv()
 {
-export ORACLE_HOME=/opt/app/grid/product/19.3.0/grid_1
+export ORACLE_HOME=$GRID_HOME
 export ORACLE_SID=+ASM
 export PATH=$START_PATH:$ORACLE_HOME/bin:$ORACLE_HOME/OPatch
 }
 
 function omsenv()
 {
-export ORACLE_HOME=$OMS_HOME
-export PATH=$START_PATH:$ORACLE_HOME/bin:$ORACLE_HOME/OPatch
+export OMS_HOME=$1
+export PATH=$START_PATH:$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$OMS_HOME/bin
 }
 
 function agentenv()
 {
-export ORACLE_HOME=$AGENT_HOME
-export PATH=$START_PATH:$ORACLE_HOME/bin:$ORACLE_HOME/OPatch
+export AGENT_HOME=$1
+export PATH=$START_PATH:$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$AGENT_HOME/bin
 }
 
 function omsctl()
@@ -158,6 +154,7 @@ else
 fi
 }
 
+# Check for interactive shell
 if [ -z "$PS1" ]; then
    return
 fi
@@ -166,7 +163,20 @@ echo ""
 runlist
 
 [ -z "$ORACLE_SID" ] && ORACLE_SID=prod
+
+if [ -f /etc/oratab ]; then
+   SID_HOME=$(grep ^$ORACLE_SID /etc/oratab | cut -f2 -d:)
+   if [ -n "$SID_HOME" ]; then
+      export HOME_PREFIX=$(dirname $(dirname $SID_HOME))
+      export ORACLE_HOME=$SID_HOME
+   fi
+fi
+
+HOST_GRID_HOME=$(dirname $(dirname $(ps -ef |grep evmd.bin | grep -v grep | awk '{print $NF}')))
+[ -n "$HOST_GRID_HOME" ] && export GRID_HOME=$HOST_GRID_HOME
+
 db193 $ORACLE_SID
+
 echo ""
 showoraenv
 echo ""
