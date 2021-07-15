@@ -172,7 +172,7 @@ if [ -f /etc/oratab ]; then
    fi
 fi
 
-HOST_GRID_HOME=$(dirname $(dirname $(ps -ef |grep evmd.bin | grep -v grep | awk '{print $NF}')))
+HOST_GRID_HOME=$(dirname $(dirname $(ps -ef |grep evmd.bin | grep -v grep | awk '{print $NF}')2>/dev/null)2>/dev/null)
 [ -n "$HOST_GRID_HOME" ] && export GRID_HOME=$HOST_GRID_HOME
 
 db193 $ORACLE_SID
