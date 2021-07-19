@@ -162,7 +162,17 @@ fi
 echo ""
 runlist
 
-[ -z "$ORACLE_SID" ] && ORACLE_SID=prod
+if [ -z "$ORACLE_SID" ]; then
+for line in $(sed -e 's/#.*$//' -e '/^$/d' /etc/oratab)
+do
+    homePath=$(echo $line | cut -d: -f2)
+    if [ -d "$homePath" ]; then
+       ORACLE_SID=$(echo $line | cut -d: -f1)
+       break
+    fi
+done
+[ -z "ORACLE_SID" ] && export ORACLE_SID=prod
+fi
 
 if [ -f /etc/oratab ]; then
    SID_HOME=$(grep ^$ORACLE_SID /etc/oratab | cut -f2 -d:)
