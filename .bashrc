@@ -10,7 +10,7 @@ fi
 export PATH=/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:$HOME/bin:/home/oracle/oracle-scripts:/home/oracle/ansible-helper
 export START_PATH=$PATH
 export HOME_PREFIX=/opt/app/oracle/product
-export GRID_PREFIX=/opt/app/oracle/product
+export GRID_PREFIX=/opt/app/grid/product
 export DB_DIR=dbhome_1
 export GRID_DIR=grid_1
 export GRID_HOME=$GRID_PREFIX/19.3.0/$GRID_DIR
@@ -172,7 +172,9 @@ if [ -f /etc/oratab ]; then
    fi
 fi
 
-HOST_GRID_HOME=$(dirname $(dirname $(ps -ef |grep evmd.bin | grep -v grep | awk '{print $NF}')2>/dev/null)2>/dev/null)
+if [ -n "$(ps -ef |grep evmd.bin | grep -v grep)" ]; then
+   HOST_GRID_HOME=$(dirname $(dirname $(ps -ef |grep evmd.bin | grep -v grep | awk '{print $NF}')))
+fi
 [ -n "$HOST_GRID_HOME" ] && export GRID_HOME=$HOST_GRID_HOME
 
 db193 $ORACLE_SID
